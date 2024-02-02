@@ -81,6 +81,38 @@ class JSC_S(nn.Module):
             x = l(x)
         return x
 
+class JSC_Big(nn.Module):
+    def __init__(self, info):
+        super(JSC_Big, self).__init__()
+        self.seq_blocks = nn.Sequential(
+            # 1st LogicNets Layer
+            nn.BatchNorm1d(16),  # input_quant       # 0
+            nn.ReLU(16),  # 1
+            nn.Linear(16, 16),  # linear              # 2
+            # 2nd LogicNets Layer
+            nn.BatchNorm1d(16),  # output_quant       # 3
+            nn.ReLU(16),  # 4
+            nn.Linear(16, 16),  # linear              # 5
+            # 3rd LogicNets Layer
+            nn.BatchNorm1d(16),  # output_quant       # 6
+            nn.ReLU(16),  # 7
+            nn.Linear(16, 16),  # linear              # 8
+
+            # 4th LogicNets Layer
+            nn.BatchNorm1d(16),  # output_quant       # 9
+            nn.ReLU(16),  # 10
+            nn.Linear(16, 16),  # linear              # 11
+
+            # 5th LogicNets Layer
+            nn.BatchNorm1d(16),  # output_quant       # 12
+            nn.ReLU(16),  # 13
+            nn.Linear(16, 5),  # linear              # 14
+
+            nn.ReLU(5),  # 15
+        )
+
+    def forward(self, x):
+        return self.seq_blocks(x)
 
 # Getters ------------------------------------------------------------------------------
 def get_jsc_toy(info):
@@ -91,6 +123,8 @@ def get_jsc_toy(info):
 def get_jsc_tiny(info):
     return JSC_Tiny(info)
 
-
 def get_jsc_s(info):
     return JSC_S(info)
+
+def get_jsc_big(info):
+    return JSC_Big(info)
