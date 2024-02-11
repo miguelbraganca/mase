@@ -33,7 +33,7 @@ In this section, our objective is to gain a comprehensive understanding of the c
 
 By analyzing these components, we can delve into the workings and effectiveness of the existing search function in Mase.
 
-## Turning you network to a graph
+## Turning your network to a graph
 
 We follow a similar procedure of what you have tried in lab2 to now produce a `MaseGraph`, this is converted from your pre-trained JSC model:
 
@@ -50,7 +50,7 @@ assert machop_path.exists(), "Failed to find machop at: {}".format(machop_path)
 sys.path.append(str(machop_path))
 
 from chop.dataset import MaseDataModule, get_dataset_info
-from chop.tools.logger import get_logger
+from chop.tools.logger import set_logging_verbosity
 
 from chop.passes.graph.analysis import (
     report_node_meta_param_analysis_pass,
@@ -69,8 +69,7 @@ from chop.models import get_model_info, get_model
 
 
 
-logger = getLogger("chop")
-logger.setLevel(logging.INFO)
+set_logging_verbosity("info")
 
 batch_size = 8
 model_name = "jsc-tiny"
@@ -216,6 +215,11 @@ The search flow implemented in MASE is very similar to the one that you have con
 - Runner: Different [runners](../../machop/chop/actions/search/strategies/runners) can produce different metrics, they may also use `transforms` to help compute certain search metrics.
 
 This enables one to execute the search through the MASE command line interface, remember to change the name after the `--load` option.
+
+> [Warning! Incorrect Pandas on Colab]
+
+You might see an error message complaining about `AttributeError: 'DataFrame' object has no attribute 'map'. Did you mean: 'mad'?`
+`, this is normally because of an incorrect installation on Colab, you can find the [issue](https://github.com/DeepWok/mase/issues/37#issuecomment-1919191598) here. Also, learn to search your issues on the repository may help you to find answers to many of your problems!
 
 ```bash
 ./ch search --config configs/examples/jsc_toy_by_type.toml --load your_pre_trained_ckpt
