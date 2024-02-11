@@ -88,27 +88,24 @@ class JSC_Big(nn.Module):
             # 1st LogicNets Layer
             nn.BatchNorm1d(16),  # input_quant       # 0
             nn.ReLU(16),  # 1
-            nn.Linear(16, 16),  # linear              # 2
+            nn.Linear(16, 32),  # linear              # 2
+
             # 2nd LogicNets Layer
-            nn.BatchNorm1d(16),  # output_quant       # 3
-            nn.ReLU(16),  # 4
-            nn.Linear(16, 16),  # linear              # 5
-            # 3rd LogicNets Layer
+            nn.BatchNorm1d(32),  # output_quant       # 3
+            nn.ReLU(32), # 4
+            nn.Linear(32, 16),  # linear              # 5
+
+            # 3th LogicNets Layer
             nn.BatchNorm1d(16),  # output_quant       # 6
             nn.ReLU(16),  # 7
-            nn.Linear(16, 16),  # linear              # 8
+            nn.Linear(16, 8),  # linear              # 8
 
             # 4th LogicNets Layer
-            nn.BatchNorm1d(16),  # output_quant       # 9
-            nn.ReLU(16),  # 10
-            nn.Linear(16, 16),  # linear              # 11
+            nn.BatchNorm1d(8),  # output_quant       # 9
+            nn.ReLU(8),  # 10
+            nn.Linear(8, 5),  # linear              # 11
 
-            # 5th LogicNets Layer
-            nn.BatchNorm1d(16),  # output_quant       # 12
-            nn.ReLU(16),  # 13
-            nn.Linear(16, 5),  # linear              # 14
-
-            nn.ReLU(5),  # 15
+            nn.ReLU(5),  # 12
         )
 
     def forward(self, x):
