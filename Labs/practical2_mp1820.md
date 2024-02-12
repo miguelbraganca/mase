@@ -274,6 +274,8 @@ best_result = max(results, key=lambda x: x['metrics'][0]['accuracy'])  # Example
 print(f"Best Channel Multiplier: {best_result['multiplier']} with Accuracy: {best_result['metrics'][0]['accuracy']}")
 ```
 
+Results:
+Best Channel Multiplier: 4 with Accuracy: 0.24000000357627868
 
 
 
@@ -388,6 +390,9 @@ for config in search_space:
 best_result = max(results, key=lambda x: x['metrics'][0]['accuracy'])
 print(f"Best Configuration: {best_result['config']} with Accuracy: {best_result['metrics'][0]['accuracy']}")
 ```
+
+Results:
+Best Configuration: {'layer1_scale': 2, 'layer2_input_scale': 2, 'layer2_output_scale': 2} with Accuracy: 0.25666666924953463
 
 
 ### 4) Integrate the search to the chop flow, so we can run it from the command line.
