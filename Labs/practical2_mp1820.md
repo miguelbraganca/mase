@@ -301,49 +301,74 @@ class JSC_Three_Linear_Layers(nn.Module):
 ```
 Can you then design a search so that it can reach a network that can have this kind of structure?
 
-Yes, let's first define the search space:
+Yes, by defining a new redefine_linear_transform_pass that accepts various multipliers:
 ```python
-search_space = [
-    {'layer1_scale': 2, 'layer2_input_scale': 2, 'layer2_output_scale': 4},
-    {'layer1_scale': 2, 'layer2_input_scale': 2, 'layer2_output_scale': 2},
-    {'layer1_scale': 4, 'layer2_input_scale': 4, 'layer2_output_scale': 4}
-]
+def redefine_linear_transform_pass2(graph, pass_args=None):
+    main_config = pass_args.pop('config')
+    default = main_config.pop('default', None)
+    if default is None:
+        raise ValueError("default value must be provided.")
+    
+    for node in graph.fx_graph.nodes:
+        config = main_config.get(node.name, default)['config']
+        name = config.get("name", None)
+        if name is not None:
+            ori_module = graph.modules[node.target]
+            in_features = ori_module.in_features
+            out_features = ori_module.out_features
+            bias = ori_module.bias
+
+            # Adjusting for separate input and output channel multipliers
+            channel_multiplier_input = config.get("channel_multiplier_input", 1)
+            channel_multiplier_output = config.get("channel_multiplier_output", 1)
+            
+            if name == "output_only":
+                out_features = int(out_features * channel_multiplier_output)
+            elif name == "both":
+                in_features = int(in_features * channel_multiplier_input)
+                out_features = int(out_features * channel_multiplier_output)
+            elif name == "input_only":
+                in_features = int(in_features * channel_multiplier_input)
+            
+            new_module = instantiate_linear(in_features, out_features, bias)
+            parent_name, name = get_parent_name(node.target)
+            setattr(graph.modules[parent_name], name, new_module)
+    
+    return graph, {}
 ```
 
-We redefine the class to accept scale factors:
-```python
-class JSC_Three_Linear_Layers(nn.Module):
-    def __init__(self, layer1_scale=2, layer2_input_scale=2, layer2_output_scale=4, layer3_scale=4):
-        super(JSC_Three_Linear_Layers, self).__init__()
-        self.seq_blocks = nn.Sequential(
-            nn.BatchNorm1d(16),
-            nn.ReLU(),
-            nn.Linear(16, 16*layer1_scale),  # output scaled
-            nn.ReLU(),
-            nn.Linear(16*layer1_scale, 16*layer1_scale*layer2_output_scale),  # input & output scaled
-            nn.ReLU(),
-            nn.Linear(16*layer1_scale*layer2_output_scale, 5),
-            nn.ReLU(),
-        )
-
-    def forward(self, x):
-        return self.seq_blocks(x)
-```
-
-And run the grid search loop:
+And running the grid search loop:
 
 ```python
-# Placeholder for storing results of the grid search
+def configure_and_apply_transformations_gridsearch(graph, channel_multiplier1, channel_multiplier2):
+    pass_config = {
+        "by": "name",
+        "default": {"config": {"name": None}},
+        "seq_blocks_2": {"config": {"name": "output_only", "channel_multiplier_output": channel_multiplier1}},
+        "seq_blocks_4": {"config": {"name": "both", "channel_multiplier_input": channel_multiplier1, "channel_multiplier_output": channel_multiplier2}},
+        "seq_blocks_6": {"config": {"name": "input_only", "channel_multiplier_input": channel_multiplier2}},
+    }
+    return redefine_linear_transform_pass2(graph=graph, pass_args={"config": pass_config})
+
+
+metric = MulticlassAccuracy(num_classes=5)
+precision = MulticlassPrecision(num_classes=5)
+recall = MulticlassRecall(num_classes=5)
+f1 = MulticlassF1Score(num_classes=5)
+
+num_batches = 5
+
+# Placeholder for storing results
 results = []
 
-def evaluate_model(model, data_module, metric, precision, recall, f1, num_batches):
-    # Metrics and loss initialization as before
+# Function to evaluate the model
+def evaluate_model(graph, data_module, metric, precision, recall, f1, num_batches):
     recorded_metrics = []
     accs, precs, recs, f1s, losses = [], [], [], [], []
     j = 0
     for inputs in data_module.train_dataloader():
         xs, ys = inputs
-        preds = model(xs)  # Directly use the model here
+        preds = graph.model(xs)
         loss = cross_entropy(preds, ys)
         accs.append(metric(preds, ys).item())
         precs.append(precision(preds, ys).item())
@@ -355,7 +380,6 @@ def evaluate_model(model, data_module, metric, precision, recall, f1, num_batche
             break
         j += 1
     
-    # Average and record metrics
     metrics_avg = {
         'accuracy': sum(accs) / len(accs),
         'precision': sum(precs) / len(precs),
@@ -365,6 +389,7 @@ def evaluate_model(model, data_module, metric, precision, recall, f1, num_batche
     }
     recorded_metrics.append(metrics_avg)
     
+    # Reset metrics after each evaluation
     metric.reset()
     precision.reset()
     recall.reset()
@@ -373,26 +398,28 @@ def evaluate_model(model, data_module, metric, precision, recall, f1, num_batche
     return recorded_metrics
 
 
-for config in search_space:
-    model = JSC_Three_Linear_Layers(
-        layer1_scale=config['layer1_scale'],
-        layer2_input_scale=config['layer2_input_scale'],
-        layer2_output_scale=config['layer2_output_scale'],
-    )
+channel_multiplier_combinations = [(1, 2), (2, 3), (3, 4), (4, 1)]
 
-    results_for_config = evaluate_model(model, data_module, metric, precision, recall, f1, num_batches)
+for cm1, cm2 in channel_multiplier_combinations:
+    mg = create_model_and_graph()
+    print_graph(mg, f"Original Graph with Multipliers {cm1}, {cm2}")
+
+    # Apply transformations with the current set of multipliers
+    mg, _ = configure_and_apply_transformations_gridsearch(mg, cm1, cm2)
+    print_graph(mg, f"\nTransformed Graph with Multipliers {cm1}, {cm2}")
+
+    # Evaluate the model
+    results_for_combination = evaluate_model(mg, data_module, metric, precision, recall, f1, num_batches)
     
+    # Store results with the multiplier combination for comparison
     results.append({
-        'config': config,
-        'metrics': results_for_config
+        'multipliers': (cm1, cm2),
+        'metrics': results_for_combination
     })
 
 best_result = max(results, key=lambda x: x['metrics'][0]['accuracy'])
-print(f"Best Configuration: {best_result['config']} with Accuracy: {best_result['metrics'][0]['accuracy']}")
+print(f"Best Channel Multipliers: {best_result['multipliers']} with Accuracy: {best_result['metrics'][0]['accuracy']}")
 ```
 
-Results:
-Best Configuration: {'layer1_scale': 2, 'layer2_input_scale': 2, 'layer2_output_scale': 2} with Accuracy: 0.25666666924953463
-
-
-### 4) Integrate the search to the chop flow, so we can run it from the command line.
+We get the output:
+Best Channel Multipliers: (3, 4) with Accuracy: 0.19000000059604644
