@@ -17,7 +17,7 @@ Batch Size: Training time
 These results demonstrate that increasing the batch size leads to a reduction in the time required for each training epoch. This is primarily because larger batch sizes allow for more effective utilization of the parallel processing capabilities of the GPU.
 
 
-However, this increase in computational efficiency comes at a cost. The validation accuracy tends to decrease with larger batch sizes. This phenomenon indicates a trade-off when choosing batch sizes: while larger batches can accelerate training, they may also hinder the model's ability to generalize effectively to unseen data. This can be attributed to the fact that larger batch sizes provide a more accurate estimate of the gradient, but this can lead to sharper minima in the loss landscape, which are often associated with poorer generalization.
+However, this increase in computational efficiency comes at a cost. The validation accuracy tends to decrease with larger batch sizes. This phenomenon indicates a trade-off when choosing batch sizes: while larger batches can accelerate training, they may also hinder the model's ability to generalize effectively to unseen data. This can be attributed to the fact that larger batch sizes provide a more accurate estimate of the gradient, but this can lead to local minima in the loss landscape, which are often associated with poorer generalization.
 
 ![ValAcc1.1](./images/Val_Acc_Epoch_BatchSize.png)
 
@@ -42,6 +42,8 @@ Validation Accuracy:
 
 ![learnrates](./images/1.1/1.3ValAcc.png)
 
+
+Batchsizes and learning rate are interconnected in how the influence the model's training. Larger batch sizes have a smoother gradient and thus can use a slightly higher learning rate. Conversely, smaller batch sizes are more noisy, thus requiring a smaller learning rate to manage that instability.
 
 ### 4) Implement a network that has in total around 10x more parameters than the toy network.
 The toy network was assumed to be jsc-tiny network with 117 parameters. The implemented JSC-big network has 1.4k parameters:
@@ -85,7 +87,7 @@ The Big-JSC network attained a validation accuracy of 0.703 (shown below), very 
 
 ![learnrates](./images/1.1/Big-jsc.png)
 
-These observations shows that a higher complexity network will not always lead to better performance, specially when the training hyperparameters are not adjusted. 
+These observations shows that a higher complexity network will not always lead to better performance, specially when the training hyperparameters are not adjusted. It should be also noted that a larger network also increases the risk of overfitting. However, in this case the 20 epoch training, was not enough to cause overfitting as the validation accuracy did not drop during training.
 
 
 

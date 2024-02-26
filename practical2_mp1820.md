@@ -153,7 +153,7 @@ From the executions, we clearly see 3 main points:
 # Lab 4
 
 ### 1) Can you edit your code, so that we can modify the above network to have layers expanded to double their sizes? Note: you will have to change the ReLU also.
-In order to make the layers expanded to double the size we can execute the following:
+In order to make the layers expanded to double the size we can use the following:
 ```python
 def create_model_and_graph():
     model = JSC_Three_Linear_Layers()
@@ -301,7 +301,7 @@ class JSC_Three_Linear_Layers(nn.Module):
 ```
 Can you then design a search so that it can reach a network that can have this kind of structure?
 
-Yes, by defining a new redefine_linear_transform_pass that accepts various multipliers:
+Yes, by defining a new redefine_linear_transform_pass2 that accepts various multipliers:
 ```python
 def redefine_linear_transform_pass2(graph, pass_args=None):
     main_config = pass_args.pop('config')
